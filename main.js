@@ -617,7 +617,7 @@ local.game.list.shootAlien = function() {
 
 	var img = new Image();
 	img.addEventListener("load", loadHandler, false);
-	img.src = "images/alienarmada.png";
+	img.src = "images/alienArmada.png";
 
 	cardBase.card.component.addEventListener('click', boxClick, false);
 };
