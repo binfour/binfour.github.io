@@ -707,7 +707,7 @@ local.game.list.buildMap = function() {
 	btnHolder.build('ul', local.goe.buildMap.btnHolder);
 	
 	var game = {
-		btnObjects: ['blank', 'home', 'island', 'pirate', 'ship', 'blank'],
+		btnObjects: ['water', 'home', 'island', 'pirate', 'ship', 'blank'],
 		mapObjects: [
 						[0, 0, 0, 0, 0, 0],
 						[0, 0, 0, 0, 0, 0],
@@ -758,15 +758,10 @@ local.game.list.buildMap = function() {
 			case 'blank':
 				game.blankBtn();
 				break;
+			case 'water':
 			case 'home':
-				game.btn(name);
-				break;
 			case 'island':
-				game.btn(name);
-				break;
 			case 'pirate':
-				game.btn(name);
-				break;
 			case 'ship':
 				game.btn(name);
 				break;
