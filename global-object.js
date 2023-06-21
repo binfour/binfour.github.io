@@ -207,8 +207,17 @@ var globalObject = (function () {
 		col: null,
 		card: null,
 		contentHolder: null,
+		btn: null,
+		addBtn: function(data,cb) {
+			this.btn = Object.create(obj.gui);
+			this.btn.build('div', data);
+			this.btn.gtext = 'Reset';
+			this.btn.updateText();
+			this.btn.component.addEventListener('click', cb, false);
+			this.card.addComp(this.btn);
+		},
 		build: function(data) {
-			this.col = Object.create(obj.gui)
+			this.col = Object.create(obj.gui);
 			this.col.build('div', data.col);
 			this.card = Object.create(obj.gui);
 			this.card.build('div', data.card);
@@ -216,8 +225,8 @@ var globalObject = (function () {
 			this.contentHolder.build('div', data.contentHolder);
 			
 			// assemble
-			this.col.component.appendChild(this.card.component);
-			this.card.component.appendChild(this.contentHolder.component);
+			this.col.addComp(this.card);
+			this.card.addComp(this.contentHolder);
 		}
 	}
 	

@@ -147,6 +147,7 @@ local.game.list.match = function() {
 			],
 		deck: [],
 		cardCount: 0,
+		to: null, // timeout
 		currentCard: null,
 		checking: false,
 		shuffle: function() {
@@ -213,21 +214,23 @@ local.game.list.match = function() {
 				switch(game.checkCards(card, game.currentCard)) {
 					case 'match':
 						game.checking = true;
-						var to = setTimeout(function() {
+						game.to = setTimeout(function() {
 							card.elem.className += ' invisible';
 							game.currentCard.elem.className += ' invisible';
+							clearTimeout(game.to);
+							game.to = null;
 							game.currentCard = null;
-							to = null;
 							game.checking = false;
 						}, 1000);
 						break;
 					case 'none':
 						game.checking = true;
-						var to = setTimeout(function() {
+						game.to = setTimeout(function() {
 							card.elem.src = 'images/water.png';
 							game.currentCard.elem.src = 'images/water.png';
+							clearTimeout(game.to);
+							game.to = null;
 							game.currentCard = null;
-							to = null;
 							game.checking = false;
 						},1000);
 						break;
@@ -252,6 +255,22 @@ local.game.list.match = function() {
 
 	game.shuffle();
 	game.map.forEach(buildMap);
+	
+	var resetClick = function() {
+		while (cardBase.contentHolder.component.firstChild) {
+		  cardBase.contentHolder.component.removeChild(cardBase.contentHolder.component.firstChild);
+		}
+		clearTimeout(game.to);
+		game.to = null;
+		game.currentCard = null;
+		game.checking = false;
+		game.deck = [];
+		game.cardCount = 0;
+		game.shuffle();
+		game.map.forEach(buildMap);
+	};
+	
+	cardBase.addBtn(local.goe.cardBase.btn, resetClick);
 };
 
 local.game.list.clickAddRect = function() {
@@ -263,12 +282,10 @@ local.game.list.clickAddRect = function() {
 	canvas.build('canvas', local.goe.canvasBase);
 	canvas.addStyle(local.goe.clickAddRect.canvas);
 	
-	
 	cardBase.contentHolder.addComp(canvas);
 	local.row.addComp(cardBase.col);
 	
 	var ctx = canvas.component.getContext("2d");
-	var resetBtn = document.getElementById('reset');
 
 	var boxClick = function(e) { 
 
@@ -283,11 +300,11 @@ local.game.list.clickAddRect = function() {
 	};
 
 	var resetClick = function() {
-
+		ctx.clearRect(0, 0, canvas.gwidth, canvas.gheight);
 	};
 
 	canvas.component.addEventListener('click', boxClick, false);
-	//resetBtn.addEventListener('click', resetClick, false);
+	cardBase.addBtn(local.goe.cardBase.btn, resetClick);
 };
 
 local.game.list.clickCount = function() {
@@ -795,13 +812,25 @@ local.game.list.buildMap = function() {
 		
 		name.forEach(cell);
 	};
+	
+	var resetClick = function() {
+		while (cardBase.contentHolder.component.firstChild) {
+		  cardBase.contentHolder.component.removeChild(cardBase.contentHolder.component.firstChild);
+		}
+		game.mapObjects.forEach(buildMap);
+		if(game.activeBtn) {
+			game.activeBtn.elem.style.background = '';
+			game.activeBtn = null;
+		}
+	};
 
 	game.mapObjects.forEach(buildMap);
 	game.btnObjects.forEach(buildBtns);
 	cardBase.card.addComp(btnHolder);
+	cardBase.addBtn(local.goe.cardBase.btn, resetClick);
 };
 
 init();
-// console.log(local, globalObject);
+
 })();
 

@@ -15,6 +15,10 @@ var globalElement = (function () {
 			},
 			contentHolder:{
 				gclass: 'd-flex flex-column p-2 pb-3 text-white text-shadow-1 m-auto prvHi',
+			},
+			btn:{
+				gclass: 'card-footer text-center prvHi',
+				gstyle: ' cursor: pointer'
 			}
 		},
 		treasureBase:{
@@ -115,7 +119,7 @@ var globalElement = (function () {
 				gstyle: ' cursor: pointer'
 			},
 			btnHolder:{
-				gclass: 'd-flex p-2 pb-3 list-unstyled mt-4 mx-auto'
+				gclass: 'd-flex p-2 list-unstyled mt-4 mx-auto'
 			}
 		}
 	};
