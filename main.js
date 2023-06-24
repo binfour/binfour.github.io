@@ -44,6 +44,81 @@ local.game.list.banner = function () {
 	local.row.addComp(cardBase.col);
 };
 
+local.game.list.walkAnim = function () {
+	var cardBase = Object.create(globalObject.cardBase);
+	cardBase.build(local.goe.cardBase);
+	cardBase.card.removeStyle(local.goe.moveHorizontal.card);
+	
+	var canvas = Object.create(globalObject.gui);
+	canvas.build('canvas', local.goe.canvasBase);
+	
+	cardBase.contentHolder.addComp(canvas);
+	local.row.addComp(cardBase.col);
+
+	var game = {
+		drawingSurface: null,
+		walkImgs: [],
+		sprites: [],
+		state: 'loading',
+		ship: Object.create(globalObject.sprite),
+		draw: globalObject.draw,
+		count: 0,
+		load: function() {
+			game.state = 'build';
+			game.walkImgs.forEach(function(gui) { 
+				if (!gui.gloaded) { game.state = 'loading'; }
+			});			
+		},
+		init: function() {
+			game.drawingSurface = canvas.component.getContext('2d');
+
+			local.goe.imgSrc.walkAnim.forEach(function(img) {
+				var wImg = Object.create(globalObject.gui);
+				wImg.buildImg('img', {}, local.goe.imgSrc.getAnimFilePath(img));
+				game.walkImgs.push(wImg);
+			});
+			
+			local.loop.callBacks.push(game.update);
+		},
+		build: function() {
+			game.ship.sourceWidth = 96;
+			game.ship.sourceHeight = 96;
+			game.ship.width = 96;
+			game.ship.height = 96;
+			game.ship.accelerationY = 4;
+			
+			game.ship.x = canvas.gwidth / 2 - game.ship.halfWidth();
+			game.ship.y = canvas.gheight / 2 - game.ship.halfHeight();
+			game.sprites.push(game.ship);
+
+			game.state = 'play';
+		},
+		play: function(delta) {
+
+			if(game.ship.y > canvas.gheight) {
+				game.ship.y = -game.ship.height;
+			}
+			
+			game.ship.vy = game.ship.accelerationY;
+			game.ship.y += game.ship.vy*delta;
+			
+			game.count+=3*delta;
+			if(game.count > game.walkImgs.length-1) game.count = 0;
+
+			game.draw(game.drawingSurface, canvas.component, game.sprites, game.walkImgs[Math.floor(game.count)].component);
+		},
+		update: function(delta) {
+			switch(game.state) {
+				case 'loading': game.load(); break;
+				case 'build': game.build(); break;
+				case 'play': game.play(delta); break;
+			}
+		}
+	};	
+		
+	game.init();
+};
+
 local.game.list.framesPerSecond = function () {
 	var cardBase = Object.create(globalObject.cardBase);
 	cardBase.build(local.goe.cardBase);
@@ -123,7 +198,7 @@ local.game.list.moveHorizontal = function () {
 	};	
 
 	game.img.addEventListener('load', game.init, false);
-	game.img.src = 'images/bossCheckEmployee.png';
+	game.img.src = local.goe.imgSrc.getFile('boss');
 };
 
 local.game.list.match = function() {

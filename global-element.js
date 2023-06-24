@@ -1,5 +1,13 @@
 var globalElement = (function () {
 	return {
+		imgSrc:{
+			path: 'images/', //add folder? 
+			boss: 'bossCheckemployee.png',
+			walkAnim: ['bosswalk0001.png', 'bosswalk0002.png', 'bosswalk0003.png', 'bosswalk0004.png'],
+			getFile: function (src) { return this.path+this[src]; },
+			getFilePath: function (folder,src) { return this.path+folder+'/'+this[src]; },
+			getAnimFilePath: function (src) { return this.path+'walkAnim/'+src; }
+		},
 		container:{
 			gclass: 'container px-4 py-5'
 		},
@@ -124,3 +132,4 @@ var globalElement = (function () {
 		}
 	};
 }());
+

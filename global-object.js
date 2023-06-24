@@ -145,6 +145,7 @@ var globalObject = (function () {
 		gstyle: '',
 		gwidth: 0,
 		gheight: 0,
+		gloaded: false,
 		addStyle: function(data) {
 			var gui = this, keys = Object.keys(data);
 
@@ -193,6 +194,16 @@ var globalObject = (function () {
 		build: function(elem, data) {
 			this.component = document.createElement(elem);
 			this.addStyle(data);
+		},
+		buildImg: function(elem, data, src) {
+			var gui = this;
+			var loaded = function() {
+				gui.component.removeEventListener('load', loaded, false);
+				gui.gloaded = true;
+			};
+			gui.build(elem, data);
+			gui.component.addEventListener('load', loaded, false);
+			gui.component.src = src;
 		}
 	};
 	
