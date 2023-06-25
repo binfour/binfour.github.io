@@ -2,6 +2,7 @@ var globalElement = (function () {
 	return {
 		imgSrc:{
 			path: 'images/', //add folder? 
+			alien: 'alienArmada.png',
 			boss: 'bossCheckemployee.png',
 			walkAnim: ['bosswalk0001.png', 'bosswalk0002.png', 'bosswalk0003.png', 'bosswalk0004.png'],
 			getFile: function (src) { return this.path+this[src]; },

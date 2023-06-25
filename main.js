@@ -44,6 +44,128 @@ local.game.list.banner = function () {
 	local.row.addComp(cardBase.col);
 };
 
+local.game.list.shootMissile = function() {
+	var cardBase = Object.create(globalObject.cardBase);
+	cardBase.build(local.goe.cardBase);
+	cardBase.card.addStyle(local.goe.shootAlien.card);
+
+	var canvas = Object.create(globalObject.gui);
+	canvas.build('canvas', local.goe.canvasBase);
+	
+	cardBase.contentHolder.addComp(canvas);
+	local.row.addComp(cardBase.col);
+	
+	var drawingSurface = canvas.component.getContext('2d');
+
+	var sprites = [];
+	var missiles = [];
+
+	//Create the background
+	// var background = Object.create(gObj.sprite);
+	// background.x = 0;
+	// background.y = 0;
+	// background.sourceY = 32;
+	// background.sourceWidth = 480;
+	// background.sourceHeight = 320;
+	// background.width = 480;
+	// background.height = 320;
+	// sprites.push(background);
+
+	//Create a missile sprite
+	var missile = Object.create(globalObject.sprite);
+	missile.sourceX = 96;
+	missile.sourceWidth = 16;
+	missile.sourceHeight = 16;
+	missile.width = 16;
+	missile.height = 16;
+	missile.visible = false;
+	missile.ready = true;
+	sprites.push(missile);
+
+	var alien = Object.create(globalObject.sprite);
+	alien.sourceX = 32;
+	alien.y = 32;
+	// alien.x = Math.floor(Math.random() * 15) * alien.width;
+	alien.x = canvas.gwidth / 2 - alien.width / 2;
+	sprites.push(alien);
+
+	//Create the cannon and center it
+	var cannon = Object.create(globalObject.sprite);
+	cannon.x = canvas.gwidth / 2 - cannon.width / 2;
+	cannon.y = 280;
+	sprites.push(cannon);
+
+	// var moveCannon = function() {
+		// if(cannon.x < 0) cannon.changeDirection();
+		// if(cannon.x + cannon.width > canvas.width) cannon.changeDirection();
+		// cannon.vx = cannon.speed;
+		// cannon.x+=cannon.vx;
+	// };
+
+	var moveMissile = function(delta) {
+		if(missile.vy < 0) missile.y+=missile.vy*delta;
+	};
+
+	var checkHit = function() {
+		if(globalObject.hitTestRectangle(missile, alien)) { 
+			alien.sourceX = 64;
+			missile.vy = 0;
+			missile.x = 0;
+			missile.y = 0;
+			missile.visible = false;
+			
+			var to = setTimeout(function() {
+												alien.sourceX = 32;
+												globalObject.draw(drawingSurface, canvas.component, sprites, img);
+												clearTimeout(to); 
+												to = null;
+												missile.ready = true;
+											}, 800);		
+		}
+	};
+
+	var update = function(delta) {
+	
+		//moveCannon();
+		
+		if(!missile.ready) {
+			moveMissile(delta);
+			checkHit();
+			globalObject.draw(drawingSurface, canvas.component, sprites, img);
+		}	
+	};
+
+	var loadHandler = function() {
+		img.removeEventListener("load", loadHandler, false);
+		globalObject.draw(drawingSurface, canvas.component, sprites, img);
+		local.loop.callBacks.push(update);
+	};
+
+	var boxClick = function(e) {
+		e.preventDefault();
+		
+		// console.log('im a lickc');
+		
+		// var rect = this.getBoundingClientRect();
+		// console.log('w ', rect.width, ' h ', rect.height);
+		// console.log('x ', e.x - rect.left, ' y ', e.y - rect.top);
+		// console.log('x ', e.offsetX, ' y ', e.offsetY);
+		// if (missile.ready) {
+			// missile.ready = false;
+			// missile.x = cannon.centerX() - missile.halfWidth();
+			// missile.y = cannon.y - missile.height;
+			// missile.visible = true;
+			// missile.vy = -110;
+		// }  
+	};
+
+	var img = new Image();
+	img.addEventListener("load", loadHandler, false);
+	img.src = local.goe.imgSrc.getFile('alien');
+
+	cardBase.card.component.addEventListener('click', boxClick, false);
+};
+
 local.game.list.walkAnim = function () {
 	var cardBase = Object.create(globalObject.cardBase);
 	cardBase.build(local.goe.cardBase);
@@ -709,7 +831,7 @@ local.game.list.shootAlien = function() {
 
 	var img = new Image();
 	img.addEventListener("load", loadHandler, false);
-	img.src = "images/alienArmada.png";
+	img.src = local.goe.imgSrc.getFile('alien');
 
 	cardBase.card.component.addEventListener('click', boxClick, false);
 };
