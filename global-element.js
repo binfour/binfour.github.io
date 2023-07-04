@@ -3,6 +3,7 @@ var globalElement = (function () {
 		imgSrc:{
 			path: 'images/', //add folder? 
 			alien: 'alienArmada.png',
+			meter: 'healthMeter.png',
 			boss: 'bossCheckemployee.png',
 			walkAnim: ['bosswalk0001.png', 'bosswalk0002.png', 'bosswalk0003.png', 'bosswalk0004.png'],
 			getFile: function (src) { return this.path+this[src]; },
@@ -46,6 +47,11 @@ var globalElement = (function () {
 		banner:{
 			card:{
 				gclass: ' text-bg-dark'	
+			}
+		},
+		shootMissile:{
+			contentHolder:{
+				rclass: 'text-white text-shadow-1'
 			}
 		},
 		framesPerSecond:{

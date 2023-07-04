@@ -47,123 +47,247 @@ local.game.list.banner = function () {
 local.game.list.shootMissile = function() {
 	var cardBase = Object.create(globalObject.cardBase);
 	cardBase.build(local.goe.cardBase);
-	cardBase.card.addStyle(local.goe.shootAlien.card);
+	cardBase.contentHolder.removeStyle(local.goe.shootMissile.contentHolder);
+	// cardBase.card.addStyle(local.goe.shootAlien.card);
+	
+	local.row.addComp(cardBase.col);
 
 	var canvas = Object.create(globalObject.gui);
 	canvas.build('canvas', local.goe.canvasBase);
-	
 	cardBase.contentHolder.addComp(canvas);
-	local.row.addComp(cardBase.col);
 	
-	var drawingSurface = canvas.component.getContext('2d');
-
-	var sprites = [];
-	var missiles = [];
-
-	//Create the background
-	// var background = Object.create(gObj.sprite);
-	// background.x = 0;
-	// background.y = 0;
-	// background.sourceY = 32;
-	// background.sourceWidth = 480;
-	// background.sourceHeight = 320;
-	// background.width = 480;
-	// background.height = 320;
-	// sprites.push(background);
-
-	//Create a missile sprite
-	var missile = Object.create(globalObject.sprite);
-	missile.sourceX = 96;
-	missile.sourceWidth = 16;
-	missile.sourceHeight = 16;
-	missile.width = 16;
-	missile.height = 16;
-	missile.visible = false;
-	missile.ready = true;
-	sprites.push(missile);
-
-	var alien = Object.create(globalObject.sprite);
-	alien.sourceX = 32;
-	alien.y = 32;
-	// alien.x = Math.floor(Math.random() * 15) * alien.width;
-	alien.x = canvas.gwidth / 2 - alien.width / 2;
-	sprites.push(alien);
-
-	//Create the cannon and center it
-	var cannon = Object.create(globalObject.sprite);
-	cannon.x = canvas.gwidth / 2 - cannon.width / 2;
-	cannon.y = 280;
-	sprites.push(cannon);
-
-	// var moveCannon = function() {
-		// if(cannon.x < 0) cannon.changeDirection();
-		// if(cannon.x + cannon.width > canvas.width) cannon.changeDirection();
-		// cannon.vx = cannon.speed;
-		// cannon.x+=cannon.vx;
-	// };
-
-	var moveMissile = function(delta) {
-		if(missile.vy < 0) missile.y+=missile.vy*delta;
-	};
-
-	var checkHit = function() {
-		if(globalObject.hitTestRectangle(missile, alien)) { 
-			alien.sourceX = 64;
-			missile.vy = 0;
-			missile.x = 0;
-			missile.y = 0;
-			missile.visible = false;
-			
-			var to = setTimeout(function() {
-												alien.sourceX = 32;
-												globalObject.draw(drawingSurface, canvas.component, sprites, img);
-												clearTimeout(to); 
-												to = null;
-												missile.ready = true;
-											}, 800);		
-		}
-	};
-
-	var update = function(delta) {
+	/*
+	var btnHolder = Object.create(globalObject.gui);
+	btnHolder.build('div', {});
+	cardBase.contentHolder.addComp(btnHolder);
 	
-		//moveCannon();
-		
-		if(!missile.ready) {
-			moveMissile(delta);
-			checkHit();
-			globalObject.draw(drawingSurface, canvas.component, sprites, img);
-		}	
-	};
+	var title = Object.create(globalObject.gui);
+	title.build('p', {});
+	title.gtext = 'Missile';
+	title.updateText();
+	btnHolder.addComp(title);
 
-	var loadHandler = function() {
-		img.removeEventListener("load", loadHandler, false);
-		globalObject.draw(drawingSurface, canvas.component, sprites, img);
-		local.loop.callBacks.push(update);
-	};
+	var damage = Object.create(globalObject.gui);
+	damage.build('span', {});
+	damage.gtext = 'Damage';
+	damage.updateText();
+	btnHolder.addComp(damage);
 
-	var boxClick = function(e) {
+	var dpoint = Object.create(globalObject.gui);
+	dpoint.build('span', {});
+	dpoint.gtext = 1;
+	dpoint.updateText();
+	damage.addComp(dpoint);
+	
+	var upgrade = function(e) {
 		e.preventDefault();
 		
-		// console.log('im a lickc');
+		console.log('upgrade func');
 		
-		// var rect = this.getBoundingClientRect();
-		// console.log('w ', rect.width, ' h ', rect.height);
-		// console.log('x ', e.x - rect.left, ' y ', e.y - rect.top);
-		// console.log('x ', e.offsetX, ' y ', e.offsetY);
-		// if (missile.ready) {
-			// missile.ready = false;
-			// missile.x = cannon.centerX() - missile.halfWidth();
-			// missile.y = cannon.y - missile.height;
-			// missile.visible = true;
-			// missile.vy = -110;
-		// }  
 	};
+	
+	// upgrade btn
+	var btn = Object.create(globalObject.gui);
+	btn.build('div', {gclass: 'border border-black border-2', gstyle: 'cursor: pointer;'});
+	btnHolder.addComp(btn);
+	btnHolder.component.addEventListener('click', upgrade, false);
+	
+	var cicon = Object.create(globalObject.gui);
+	cicon.build('i', {gclass: 'bi bi-coin', gstyle: 'color: orange'});
+	btn.addComp(cicon);
+	
+	var cost = Object.create(globalObject.gui);
+	cost.build('span', {});
+	cost.gtext = 100;
+	cost.updateText();
+	btn.addComp(cost);
+	*/
+	
+	var game = {
+		drawingSurface: canvas.component.getContext('2d'),
+		cannon: null,
+		alien: null,
+		missile: null,
+		hmMeter: null,
+		state: 'loading',
+		imgs: [],
+		sprites: [],
+		spritesHm: [],
+		init: function() {
+			var imgs = ['alien', 'meter'];
+			imgs.forEach(function(img) {
+				var obj = Object.create(globalObject.gui);
+				obj.buildImg('img', {}, local.goe.imgSrc.getFile(img));
+				game.imgs.push(obj);
+			});
+			local.loop.callBacks.push(game.update);
 
-	var img = new Image();
-	img.addEventListener("load", loadHandler, false);
-	img.src = local.goe.imgSrc.getFile('alien');
+		},
+		load: function() {
+			game.state = 'build';
+			game.imgs.forEach(function(gui) { 
+				if (!gui.gloaded) { game.state = 'loading'; }
+			});
+		},
+		build: function() {
+			var background = Object.create(globalObject.sprite);
+			background.x = 0;
+			background.y = 0;
+			background.sourceY = 32;
+			background.sourceWidth = 480;
+			background.sourceHeight = 320;
+			background.width = 480;
+			background.height = 320;
+			game.sprites.push(background);
+			
+			var alien = Object.create(globalObject.sprite);
+			alien.sourceX = 32;
+			alien.y = 32;
+			// alien.x = Math.floor(Math.random() * 15) * alien.width;
+			alien.x = canvas.gwidth / 2 - alien.width / 2;
+			alien.health = 5;
+			alien.currentHealth = 5;
+			game.sprites.push(alien);
+			game.alien = alien;
+			
+			//Create the cannon and center it
+			var cannon = Object.create(globalObject.sprite);
+			cannon.x = canvas.gwidth / 2 - cannon.width / 2;
+			cannon.y = 280;
+			game.sprites.push(cannon);
+			game.cannon = cannon;
+			
+			var missile = Object.create(globalObject.sprite);
+			missile.sourceX = 96;
+			missile.sourceWidth = 16;
+			missile.sourceHeight = 16;
+			missile.width = 16;
+			missile.height = 16;
+			// missile.visible = false;
+			// missile.ready = true;
+			missile.x = cannon.centerX() - missile.halfWidth();
+			missile.y = cannon.y - missile.height;
+			missile.vy = -110;
+			missile.damage = 1;
+			
+			missile.interval = Object.create(globalObject.timer);
+			missile.interval.name= 'interval';
+			missile.interval.duration = 3000;
+			local.loop.timers.push(missile.interval.update.bind(missile.interval));
+			
+			missile.respawn = Object.create(globalObject.timer);
+			missile.respawn.name = 'respawn';
+			missile.respawn.duration = 1500;
+			local.loop.timers.push(missile.respawn.update.bind(missile.respawn));
+			
+			game.sprites.push(missile);
+			game.missile = missile;
+			
+			var hmBorder = Object.create(globalObject.sprite);
+			hmBorder.sourceWidth = 128;
+			hmBorder.sourceHeight = 14;
+			hmBorder.width = 128;
+			hmBorder.height = 14;
+			hmBorder.x = canvas.gwidth / 2 - hmBorder.width /2;
+			hmBorder.y = 10;
+			game.spritesHm.push(hmBorder);
+			
+			var hmMeter = Object.create(globalObject.sprite);
+			hmMeter.sourceY = 14;
+			hmMeter.sourceWidth = 128;
+			hmMeter.sourceHeight = 14;
+			hmMeter.width = 128;
+			hmMeter.height = 14;
+			hmMeter.x = canvas.gwidth / 2 - hmMeter.width /2;
+			hmMeter.y = 10;
+			game.spritesHm.push(hmMeter);
+			game.hmMeter = hmMeter;
+			
+			game.state = 'play';
+		},
+		render: function() {
+			game.drawingSurface.clearRect(0, 0, canvas.gwidth, canvas.gheight);
+			
+			// draw background, ship, alien
+			globalObject.draw(game.drawingSurface, canvas.component, game.sprites, game.imgs[0].component);
+			
+			// draw health meter
+			globalObject.draw(game.drawingSurface, canvas.component, game.spritesHm, game.imgs[1].component);
+		},
+		play: function(time) {
+			
+			if(globalObject.hitTestRectangle(game.missile, game.alien)) { 
+		
+				game.alien.currentHealth-=game.missile.damage;
+				if(game.alien.currentHealth == 0) {
+					
+					game.alien.sourceX = 64;
+				
+					game.missile.vy = 0;
+					game.missile.x = game.cannon.centerX() - game.missile.halfWidth();
+					game.missile.y = game.cannon.y - game.missile.height;
+					game.missile.visible = false;
+					
+					game.hmMeter.width = game.alien.currentHealth/game.alien.health * 128;
+					game.hmMeter.sourceWidth = game.alien.currentHealth/game.alien.health * 128;
+					
+					// respawn
+					game.missile.respawn.start();
+					
+				} else {
+					
+					game.missile.vy = 0;
+					game.missile.x = game.cannon.centerX() - game.missile.halfWidth();
+					game.missile.y = game.cannon.y - game.missile.height;
+					game.missile.visible = false;
+					
+					game.hmMeter.width = game.alien.currentHealth/game.alien.health * 128;
+					game.hmMeter.sourceWidth = game.alien.currentHealth/game.alien.health * 128;
+					
+					game.missile.interval.start();
+				
+				}
+				
+			}
 
-	cardBase.card.component.addEventListener('click', boxClick, false);
+			// shoot missile
+			if(game.missile.interval.complete) {
+				game.missile.interval.end();
+				game.missile.visible = true;
+				game.missile.vy = -110;
+			}
+			
+			// respawn
+			if(game.missile.respawn.complete) {
+				game.missile.respawn.end();
+				
+				game.alien.currentHealth = 5;
+				game.alien.sourceX = 32;
+
+				game.hmMeter.width = game.alien.currentHealth/game.alien.health * 128;
+				game.hmMeter.sourceWidth = game.alien.currentHealth/game.alien.health * 128;
+					
+				game.missile.interval.start();
+				
+			}
+			
+			// move missile
+			if(game.missile.vy < 0) {
+				game.missile.y+=game.missile.vy*time.delta;
+			}
+
+			game.render();
+
+		},
+		update: function(time) {
+			switch(game.state) {
+				case 'loading': game.load(); break;
+				case 'build': game.build(); break;
+				case 'play': game.play(time); break;
+			}
+		}
+	};
+	game.init();
 };
 
 local.game.list.walkAnim = function () {
@@ -207,7 +331,7 @@ local.game.list.walkAnim = function () {
 			game.ship.sourceHeight = 96;
 			game.ship.width = 96;
 			game.ship.height = 96;
-			game.ship.accelerationY = 4;
+			game.ship.accelerationY = 2
 			
 			game.ship.x = canvas.gwidth / 2 - game.ship.halfWidth();
 			game.ship.y = canvas.gheight / 2 - game.ship.halfHeight();
@@ -215,25 +339,27 @@ local.game.list.walkAnim = function () {
 
 			game.state = 'play';
 		},
-		play: function(delta) {
+		play: function(time) {
 
 			if(game.ship.y > canvas.gheight) {
 				game.ship.y = -game.ship.height;
 			}
 			
 			game.ship.vy = game.ship.accelerationY;
-			game.ship.y += game.ship.vy*delta;
+			game.ship.y += game.ship.vy*time.delta;
 			
-			game.count+=3*delta;
+			game.count+=3*time.delta;
 			if(game.count > game.walkImgs.length-1) game.count = 0;
-
+			
+			game.drawingSurface.clearRect(0, 0, canvas.gwidth, canvas.gheight);
+			
 			game.draw(game.drawingSurface, canvas.component, game.sprites, game.walkImgs[Math.floor(game.count)].component);
 		},
-		update: function(delta) {
+		update: function(time) {
 			switch(game.state) {
 				case 'loading': game.load(); break;
 				case 'build': game.build(); break;
-				case 'play': game.play(delta); break;
+				case 'play': game.play(time); break;
 			}
 		}
 	};	
@@ -255,10 +381,9 @@ local.game.list.framesPerSecond = function () {
 	local.row.addComp(cardBase.col);
 
 	var counter = Object.create(globalObject.fpsCounter);
-	counter.start();
 
-	local.loop.callBacks.push(function(delta) {
-												counter.update();
+	local.loop.callBacks.push(function(time) {
+												counter.update(time);
 												h3.gtext = counter.fps;
 												h3.updateText();
 											});
@@ -300,7 +425,7 @@ local.game.list.moveHorizontal = function () {
 			
 			local.loop.callBacks.push(game.start);
 		},
-		start: function(delta) {
+		start: function(time) {
 			
 			if(game.ship.x < 0) {
 				game.ship.accelerationX *= game.ship.bounce;
@@ -313,7 +438,9 @@ local.game.list.moveHorizontal = function () {
 			}
 			
 			game.ship.vx = game.ship.accelerationX;
-			game.ship.x += game.ship.vx*delta;
+			game.ship.x += game.ship.vx*time.delta;
+			
+			game.drawingSurface.clearRect(0, 0, canvas.gwidth, canvas.gheight);
 			
 			game.draw(game.drawingSurface, canvas.component, game.sprites, game.img);
 		}
@@ -779,8 +906,8 @@ local.game.list.shootAlien = function() {
 		// cannon.x+=cannon.vx;
 	// };
 
-	var moveMissile = function(delta) {
-		if(missile.vy < 0) missile.y+=missile.vy*delta;
+	var moveMissile = function(time) {
+		if(missile.vy < 0) missile.y+=missile.vy*time.delta;
 	};
 
 	var checkHit = function() {
@@ -793,6 +920,7 @@ local.game.list.shootAlien = function() {
 			
 			var to = setTimeout(function() {
 												alien.sourceX = 32;
+												drawingSurface.clearRect(0, 0, canvas.gwidth, canvas.gheight);
 												globalObject.draw(drawingSurface, canvas.component, sprites, img);
 												clearTimeout(to); 
 												to = null;
@@ -801,13 +929,14 @@ local.game.list.shootAlien = function() {
 		}
 	};
 
-	var update = function(delta) { 
+	var update = function(time) { 
 	
 		//moveCannon();
 		
 		if(!missile.ready) {
-			moveMissile(delta);
+			moveMissile(time);
 			checkHit();
+			drawingSurface.clearRect(0, 0, canvas.gwidth, canvas.gheight);
 			globalObject.draw(drawingSurface, canvas.component, sprites, img);
 		}	
 	};

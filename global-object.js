@@ -61,7 +61,7 @@ var globalObject = (function () {
 	
 	obj.draw = function(drawingSurface, canvas, sprites, img) {
 
-		drawingSurface.clearRect(0, 0, canvas.width, canvas.height);
+		// drawingSurface.clearRect(0, 0, canvas.width, canvas.height);
 		
 		//Display the sprites
 		if(sprites.length !== 0) {
@@ -84,52 +84,111 @@ var globalObject = (function () {
 	obj.fpsCounter = { // by time
 		count: 0, // count frames per second
 		interval: 1000, // call every 1 second
+		previous: null,
+		elapses: [],
 		fps: 0,
 		last: null,
-		update: function() {
-					
+		update: function(time) {
+			if (!this.last) {
+				this.last = time.stamp;
+			}
+				
 			this.count++; // increment frame count
 			
-			var delta = Date.now() - this.last;
+			this.elapses.push(time.stamp-this.previous);
+			// console.log(this.elapses)
+			
+			this.previous = time.stamp;
+			
+			var delta = time.stamp - this.last;
 			if(delta >= this.interval) {
-				this.fps = this.count;
+
+				var initValue = 0;
+				var sum = this.elapses.reduce(
+					function(accumulator, currentValue) {
+						return 	accumulator + currentValue
+					}, initValue);
+				
+				this.fps = (1000/(sum/this.count)).toPrecision(5);
 				this.count = 0;
-				this.start();
+				this.last = null;
+				this.elapses = [];
 			}
 		},
 		start: function() {
-			this.last = Date.now();
+			//this.last = performance.now();
 		}
 	};	
+	
+	obj.timer = {
+		name: 'default',
+		duration: 1000, //default 1 sec
+		last: null,
+		complete: false,
+		state: 'end',
+		update: function(time) { 
+			if(this.state === 'start') {
+				if (!this.last) {
+					this.last = time.stamp;
+				}
+				var delta = time.stamp - this.last;
+				if( delta >= this.duration) {
+					this.complete = true;
+				}
+			}
+		},
+		start: function() {
+			this.state = 'start';
+		},
+		end: function() {
+			this.state = 'end';
+			this.complete = false;
+			this.last = null;
+		}
+	};
 	
 	obj.loop = { // by interval
 		aId: null,
 		last: null,
-		fpsInterval: parseInt(1000/30), // call every 33.33 ms
+		fpsInterval: 1000/30, // call every 33.33 ms
 		callBacks: null,
+		timers: null,
 		setFps: function(fps) { 
-			this.fpsInterval = parseInt(1000/fps);
+			this.fpsInterval = 1000/fps;
 		},
-		update: function() { // grab delta - for animation
+		update: function(timeStamp) {
 			this.aId = requestAnimationFrame(this.update.bind(this));
 			
-			var delta = Date.now() - this.last;
+			if (!this.last) {
+				this.last = timeStamp;
+			}
+			
+			var delta = timeStamp - this.last;
+			
+			// *** fix this	
+			var tObj = {delta:delta*.001, stamp:timeStamp};
+			
+			// timers
+			this.timers.forEach(function(cb) {cb(tObj)});
+			
 			if(delta >= this.fpsInterval) {
 				
 				// inactive tab
 				var maxFps = 51;
 				delta = Math.min(delta, maxFps);
 				
-				this.last = Date.now() - (delta % this.fpsInterval);
-
+				this.last = timeStamp - (delta % this.fpsInterval);
+				
 				// DRAW(delta in seconds)
 				// UPDATE(delta in seconds)
-				this.callBacks.forEach(function(cb) { cb(delta*.001); });
+				var tObj = {delta:delta*.001, stamp:timeStamp};
+				this.callBacks.forEach(function(cb) {cb(tObj)});
 			}
 		},
 		start: function() {
-			this.callBacks = []
-			this.last = Date.now();
+			this.callBacks = [];
+			this.timers = [];
+			//this.last = Date.now();
 			this.aId = requestAnimationFrame(this.update.bind(this));
 		},
 		end: function() {
