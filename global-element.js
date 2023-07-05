@@ -49,6 +49,11 @@ var globalElement = (function () {
 				gclass: ' text-bg-dark'	
 			}
 		},
+		increment:{
+			card:{
+				gstyle: 'background-color: #891780;'
+			}
+		},
 		shootMissile:{
 			contentHolder:{
 				rclass: 'text-white text-shadow-1'

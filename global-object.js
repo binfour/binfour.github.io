@@ -150,7 +150,7 @@ var globalObject = (function () {
 	obj.loop = { // by interval
 		aId: null,
 		last: null,
-		fpsInterval: 1000/30, // call every 33.33 ms
+		fpsInterval: 1000/30.39, // call every 33.33 ms
 		callBacks: null,
 		timers: null,
 		setFps: function(fps) { 
@@ -181,7 +181,8 @@ var globalObject = (function () {
 				
 				// DRAW(delta in seconds)
 				// UPDATE(delta in seconds)
-				var tObj = {delta:delta*.001, stamp:timeStamp};
+				// var tObj = {delta:delta*.001, stamp:timeStamp};
+				var tObj = {delta:.033, stamp:timeStamp};
 				this.callBacks.forEach(function(cb) {cb(tObj)});
 			}
 		},

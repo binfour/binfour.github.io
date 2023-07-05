@@ -44,6 +44,40 @@ local.game.list.banner = function () {
 	local.row.addComp(cardBase.col);
 };
 
+local.game.list.increment = function () {
+	var cardBase = Object.create(globalObject.cardBase);
+	cardBase.build(local.goe.cardBase);
+	cardBase.card.addStyle(local.goe.increment.card);
+
+	var h3 = Object.create(globalObject.gui);
+	h3.build('h3', local.goe.h3);
+	h3.gtext = 0;
+	h3.updateText();
+
+	cardBase.contentHolder.addComp(h3);
+	local.row.addComp(cardBase.col);
+	
+	var inc = 5; // per second
+	var total = 0
+	
+	var timer = Object.create(globalObject.timer);
+	timer.duration = 1000;
+	local.loop.timers.push(timer.update.bind(timer));
+	timer.start();
+	
+	var count = 0;
+	setInterval(function(){
+		count+=5;
+	},1000);
+	
+	local.loop.callBacks.push(function(time) {
+		var t = inc*time.delta;
+		total += t;
+		h3.gtext = (total).toFixed() + '   ' + count;
+		h3.updateText();
+	});
+};
+
 local.game.list.shootMissile = function() {
 	var cardBase = Object.create(globalObject.cardBase);
 	cardBase.build(local.goe.cardBase);
