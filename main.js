@@ -59,12 +59,6 @@ local.game.list.increment = function () {
 	
 	var inc = 5; // per second
 	var total = 0
-	
-	var timer = Object.create(globalObject.timer);
-	timer.duration = 1000;
-	local.loop.timers.push(timer.update.bind(timer));
-	timer.start();
-	
 	var count = 0;
 	setInterval(function(){
 		count+=5;
