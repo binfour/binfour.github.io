@@ -49,6 +49,11 @@ var globalElement = (function () {
 				gclass: ' text-bg-dark'	
 			}
 		},
+		buttons:{
+			contentHolder:{
+				rclass: 'text-white text-shadow-1 m-auto'
+			}
+		},
 		increment:{
 			card:{
 				gstyle: 'background-color: #891780;'

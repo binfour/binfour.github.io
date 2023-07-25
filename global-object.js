@@ -26,7 +26,45 @@ var globalObject = (function () {
 		centerX: function() { return this.x + (this.width / 2); },
 		centerY: function() { return this.y + (this.height / 2); },
 		halfWidth: function() { return this.width / 2; },
-		halfHeight: function() { return this.height / 2; }
+		halfHeight: function() { return this.height / 2; },
+		build: function(data) {
+			var sprite = this, keys = Object.keys(data);
+			
+			keys.forEach(function(key) {
+				switch(key) {
+					case 'sourceX':
+						sprite.sourceX = data[key];
+						break;
+					case 'sourceY':
+						sprite.sourceY = data[key];
+						break;
+					case 'sourceWidth':
+						sprite.sourceWidth = data[key];
+						break;
+					case 'sourceHeight':
+						sprite.sourceHeight = data[key];
+						break;
+					case 'width':
+						sprite.width = data[key];
+						break;
+					case 'height':
+						sprite.height = data[key];
+						break;
+					case 'x':
+						sprite.x = data[key];
+						break;
+					case 'y':
+						sprite.y = data[key];
+						break;
+					case 'vx':
+						sprite.vx = data[key];
+						break;
+					case 'vy':
+						sprite.vy = data[key];
+						break;
+				}
+			});
+		}
 	};
 	
 	obj.hitTestRectangle = function(r1, r2) {
@@ -126,6 +164,8 @@ var globalObject = (function () {
 		last: null,
 		complete: false,
 		state: 'end',
+		count: 0,
+		point: 0,
 		update: function(time) { 
 			if(this.state === 'start') {
 				if (!this.last) {
@@ -135,6 +175,7 @@ var globalObject = (function () {
 				if( delta >= this.duration) {
 					this.complete = true;
 				}
+				this.count = delta*.001;
 			}
 		},
 		start: function() {
@@ -144,13 +185,22 @@ var globalObject = (function () {
 			this.state = 'end';
 			this.complete = false;
 			this.last = null;
+			this.count = 0;
+			this.point = 0;
+		},
+		getCount: function() {
+			if(Math.trunc(this.count) > this.point) {
+				this.point = Math.trunc(this.count);
+				return this.point;
+			}
+			return -1;
 		}
 	};
 	
 	obj.loop = { // by interval
 		aId: null,
 		last: null,
-		fpsInterval: 1000/30.39, // call every 33.33 ms
+		fpsInterval: 1000/30.39, // fix -time lag. later in game. call every 33.33 ms
 		callBacks: null,
 		timers: null,
 		setFps: function(fps) { 
@@ -244,11 +294,19 @@ var globalObject = (function () {
 							gui.gclass = gui.gclass.replace(' '+value, ''); 
 						});
 						gui.component.className=gui.gclass;
-					break;
+						break;
+					case 'rstyle':
+						var values = data[key].split(';');
+						values.forEach(function(value) {
+							gui.gstyle = gui.gstyle.replace(' '+value, ''); 
+						});
+						gui.component.style=gui.gstyle;
+						break;
 				}
 			});
 		},
-		updateText: function() {
+		updateText: function(txt) {
+			this.gtext=txt;
 			this.component.innerHTML = this.gtext;
 		},
 		build: function(elem, data) {
@@ -264,6 +322,19 @@ var globalObject = (function () {
 			gui.build(elem, data);
 			gui.component.addEventListener('load', loaded, false);
 			gui.component.src = src;
+		},
+		create: function(data) {	
+			var gui = Object.create(this);
+			gui.build(data.elem, data.style);
+			if(data.txt) gui.updateText(data.txt);
+			data.parentHolder.component.appendChild(gui.component);
+			return gui;
+		},
+		connect: function(data) {	
+			var gui = Object.create(this);
+			gui.build(data.elem, data.style);
+			if(data.txt) gui.updateText(data.txt);
+			data.parentHolder.component.appendChild(gui.component);
 		}
 	};
 	
@@ -282,8 +353,7 @@ var globalObject = (function () {
 		addBtn: function(data,cb) {
 			this.btn = Object.create(obj.gui);
 			this.btn.build('div', data);
-			this.btn.gtext = 'Reset';
-			this.btn.updateText();
+			this.btn.updateText('Reset');
 			this.btn.component.addEventListener('click', cb, false);
 			this.card.addComp(this.btn);
 		},

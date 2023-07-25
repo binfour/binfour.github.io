@@ -37,13 +37,316 @@ local.game.list.banner = function () {
 
 	var h3 = Object.create(globalObject.gui);
 	h3.build('h3', local.goe.h3);
-	h3.gtext = 'Bin Four';
-	h3.updateText();
+	h3.updateText('Bin Four');
 
 	cardBase.contentHolder.addComp(h3);
 	local.row.addComp(cardBase.col);
 };
 
+local.game.list.buttons = function () {
+	var cardBase = Object.create(globalObject.cardBase);
+	cardBase.build(local.goe.cardBase);
+	cardBase.contentHolder.removeStyle(local.goe.buttons.contentHolder);
+
+	local.row.addComp(cardBase.col);
+	
+	var incBurst = {
+		burst: false,
+		last: null,
+		duration: 3000, //default
+		amount: 0, //integer
+		lStamp: null,
+		income: 0,
+		point: 0,
+		callBack: null,
+		update: function(time) {
+			
+			if (!this.last) { this.last = time.stamp; }
+			
+			var delta = time.stamp-this.last;
+			
+			if (!this.lStamp) { this.lStamp = delta/this.duration; }
+			
+			if(delta <= this.duration) {
+				this.amount+=this.income*(delta/this.duration-this.lStamp);
+				if(Math.trunc(this.amount) > this.point) {
+					this.callBack(Math.trunc(this.amount)-this.point);
+					this.point = Math.trunc(this.amount);
+				}
+				this.lStamp=delta/this.duration;
+			} else {
+				this.callBack(this.income-this.point); 
+				this.burst = false;
+			}
+		},
+		clear: function() {		
+			this.last = null;
+			this.amount = 0;
+			this.point = 0;
+			this.lStamp = null;
+		}
+	};
+		
+	// income per second
+	var incomePerSecs = {
+		income: {
+			gui: null,
+			value: 0,
+			update: function(value) {
+				this.value+=value;
+				this.gui.updateText(this.value);
+			},
+			build: function(holder, value) {
+				this.value=value;
+				
+				var label = globalObject.gui.create({elem: 'div', style: {gclass: 'd-inline'}, parentHolder: holder});
+				globalObject.gui.connect({elem: 'span', txt: '+', style: {gclass: ''}, parentHolder: label});
+				
+				this.gui = globalObject.gui.create({elem: 'span', txt: this.value, style: {gstyle: 'margin-left: -2px;'}, parentHolder: label});
+			}
+		},
+		secs: {
+			gui: null,
+			value: 0,
+			update: function(count) {
+				if(count > -1) { 
+					if(count < this.value+1) {
+						var ct = this.value-count;
+						if(ct < 10) {
+							this.gui.updateText('0'+ct);
+						} else {
+							this.gui.updateText(ct);	
+						}
+					}
+				}
+			},
+			build: function(holder, value) {
+				this.value=value;
+				
+				var label = globalObject.gui.create({elem: 'div', style: {gclass: 'd-inline ms-2'}, parentHolder: holder});
+				
+				globalObject.gui.connect({elem: 'span', txt: 'in ', style: {gclass: ''}, parentHolder: label});
+				
+				this.gui = globalObject.gui.create({elem: 'span', txt: this.value, style: {gclass: 'ms-1'}, parentHolder: label});
+				
+				globalObject.gui.connect({elem: 'span', txt: 'secs', style: {gclass: ''}, parentHolder: label});
+			}
+		},
+		build: function(income, interval) {
+			var holder = globalObject.gui.create({elem: 'div', style: {gclass: 'mt-1 mb-5'}, parentHolder: cardBase.contentHolder});
+			
+			this.income.build(holder, income);
+			
+			// ***FIX THIS -hard coded
+			this.secs.build(holder, interval/1000);  
+		}
+	};
+	
+	// timer second until next income
+	
+	// upgrade button
+	var upgradeBtn = {
+		active: false,
+		
+		// main callback
+		callBack: null,
+		
+		// parent
+		holder: { 
+			gui: null,
+			bgBlue: function() {
+				this.gui.removeStyle({rstyle: 'background: #e6e6e6;'});
+				this.gui.addStyle({gstyle: 'background: #abceee;'});
+			},
+			bgGrey: function() {
+				this.gui.removeStyle({rstyle: 'background: #abceee;'});
+				this.gui.addStyle({gstyle: 'background: #e6e6e6;'});
+			},
+			build: function(holder) {
+				this.gui = globalObject.gui.create({elem: 'div', style: {gclass: 'rounded-1 p-1 ps-3', gstyle: 'cursor: pointer; background: #e6e6e6;'}, parentHolder: holder});
+			}
+		},
+		income: {
+			gui: null,
+			value: 0,
+			update: function() {
+				
+			},
+			build: function(holder, value) {
+				this.value=value;
+				
+				var label = globalObject.gui.create({elem: 'div', style: {}, parentHolder: holder});
+				globalObject.gui.connect({elem: 'span', txt: 'Income', style: {gclass: 'me-3'}, parentHolder: label});
+				globalObject.gui.connect({elem: 'span', txt: '+', style: {gclass: ''}, parentHolder: label});
+				
+				this.gui = globalObject.gui.create({elem: 'span', txt: this.value, style: {gstyle: 'margin-left: -2px;'}, parentHolder: label});
+			}
+		},
+		cost: {
+			value: 0,
+			update: function() {
+			
+			},
+			build: function(holder, value) {
+				this.value=value;
+				
+				var label = globalObject.gui.create({elem: 'div', style: {}, parentHolder: holder});
+				globalObject.gui.connect({elem: 'span', txt: '$', style: {gclass: ''}, parentHolder: label});
+				
+				this.gui = globalObject.gui.create({elem: 'span', txt: this.value, style: {gstyle: 'margin-left: 0px;'}, parentHolder: label});
+			}
+		},
+
+		// leave here -need access to all objects
+		handler: function(e) {
+			e.preventDefault();
+			this.callBack();
+		},
+		build: function(investment, cb) {
+			
+			// parent
+			this.holder.build(cardBase.contentHolder);
+			
+			// main callback
+			this.callBack = cb;
+			
+			// move outside -call all updates
+			this.holder.gui.component.addEventListener('click', this.handler.bind(this), false);
+			
+			this.income.build(this.holder.gui, investment.income);
+			this.cost.build(this.holder.gui, investment.cost);
+		}
+	};
+		
+	var coin = {
+		total: 0,
+		active: false,
+		gui: null,
+		delay: Object.create(globalObject.timer),
+		controller: Object.create(incBurst),
+		set: function(income) {
+			this.controller.clear();
+			this.controller.burst = true;
+			
+			// ** FIX THIS
+			this.controller.income = income;
+		},
+		add: function(t) {
+			this.total+=t;
+		},
+		subtract: function(t) {
+			this.total-=t;
+		},
+		updateGui: function() {	
+			this.gui.updateText('$'+this.total);
+		},
+		
+		// main loop
+		update: function(time) {
+			
+			if(this.controller.burst && !this.active) {
+		
+				this.gui.removeStyle({rstyle: 'color: #212529;'});
+				this.gui.addStyle({gstyle: 'color: #4fc24f;'}); 
+				this.active = true;
+			} else if(!this.controller.burst && this.active){
+				this.delay.start();
+			}
+			
+			if(this.delay.complete) {
+				this.delay.end();
+				this.gui.removeStyle({rstyle: 'color: #4fc24f;'});
+				this.gui.addStyle({gstyle: 'color: #212529;'});
+				this.active = false;
+			}
+			
+			if(this.controller.burst) {
+				this.controller.update(time);
+			}
+		},
+		
+		// controller callback
+		callBack: function(increment) {
+			this.add(increment);
+			this.updateGui();
+		},
+		build: function(income) {
+			this.gui = Object.create(globalObject.gui);
+			this.gui.build('span', {gstyle: 'color: #212529'});
+			this.updateGui();
+			
+			// ** FIX THIS
+			cardBase.contentHolder.addComp(this.gui);
+			
+			this.controller.income = income
+			this.controller.callBack = this.callBack.bind(this);
+			
+			this.delay.duration = 1000;
+			local.loop.timers.push(this.delay.update.bind(this.delay));
+		}
+	};
+
+	var game = {
+		income: 1, // income per interval
+		interval: 20000, // 10 secs
+		investment: {type: 'House', income: 1, cost: 20, update: function() {}},
+		init: function() {
+
+		},
+		load: function() {
+			
+		},
+		callBack: function() {
+			if(coin.total >= upgradeBtn.cost.value) {
+
+				coin.subtract(upgradeBtn.cost.value);
+				coin.updateGui();
+
+				incomePerSecs.income.update(upgradeBtn.income.value);
+			}
+		},
+		build: function() {
+			
+			coin.build(game.income);
+			incomePerSecs.build(game.income, game.interval);
+			upgradeBtn.build(game.investment, game.callBack);
+			
+			var timer = Object.create(globalObject.timer);
+			timer.duration = game.interval;
+			timer.start();
+			local.loop.timers.push(timer.update.bind(timer));
+			
+			local.loop.callBacks.push(function(time) {
+
+				incomePerSecs.secs.update(timer.getCount());
+				
+				// increment
+				if(timer.complete) {
+					timer.end();
+					coin.set(incomePerSecs.income.value);
+					timer.start();
+				}
+				
+				coin.update(time);
+				
+				if((coin.total >= upgradeBtn.cost.value) && !upgradeBtn.active) {
+					upgradeBtn.active = true;
+					upgradeBtn.holder.bgBlue(); 
+				} else if((coin.total < upgradeBtn.cost.value) && upgradeBtn.active){
+					upgradeBtn.active = false;
+					upgradeBtn.holder.bgGrey();
+				}
+			});
+					
+		},
+		play: function() {
+			
+		}
+	};
+	game.build();
+};
+
+/*
 local.game.list.increment = function () {
 	var cardBase = Object.create(globalObject.cardBase);
 	cardBase.build(local.goe.cardBase);
@@ -57,20 +360,22 @@ local.game.list.increment = function () {
 	cardBase.contentHolder.addComp(h3);
 	local.row.addComp(cardBase.col);
 	
-	var inc = 5; // per second
+	var inc = 20000; // per second
 	var total = 0
 	var count = 0;
 	setInterval(function(){
-		count+=5;
+		count+=20000;
 	},1000);
 	
 	local.loop.callBacks.push(function(time) {
 		var t = inc*time.delta;
 		total += t;
+		h3.gtext = (total).toFixed();
 		h3.gtext = (total).toFixed() + '   ' + count;
 		h3.updateText();
 	});
 };
+*/
 
 local.game.list.shootMissile = function() {
 	var cardBase = Object.create(globalObject.cardBase);
@@ -83,53 +388,6 @@ local.game.list.shootMissile = function() {
 	var canvas = Object.create(globalObject.gui);
 	canvas.build('canvas', local.goe.canvasBase);
 	cardBase.contentHolder.addComp(canvas);
-	
-	/*
-	var btnHolder = Object.create(globalObject.gui);
-	btnHolder.build('div', {});
-	cardBase.contentHolder.addComp(btnHolder);
-	
-	var title = Object.create(globalObject.gui);
-	title.build('p', {});
-	title.gtext = 'Missile';
-	title.updateText();
-	btnHolder.addComp(title);
-
-	var damage = Object.create(globalObject.gui);
-	damage.build('span', {});
-	damage.gtext = 'Damage';
-	damage.updateText();
-	btnHolder.addComp(damage);
-
-	var dpoint = Object.create(globalObject.gui);
-	dpoint.build('span', {});
-	dpoint.gtext = 1;
-	dpoint.updateText();
-	damage.addComp(dpoint);
-	
-	var upgrade = function(e) {
-		e.preventDefault();
-		
-		console.log('upgrade func');
-		
-	};
-	
-	// upgrade btn
-	var btn = Object.create(globalObject.gui);
-	btn.build('div', {gclass: 'border border-black border-2', gstyle: 'cursor: pointer;'});
-	btnHolder.addComp(btn);
-	btnHolder.component.addEventListener('click', upgrade, false);
-	
-	var cicon = Object.create(globalObject.gui);
-	cicon.build('i', {gclass: 'bi bi-coin', gstyle: 'color: orange'});
-	btn.addComp(cicon);
-	
-	var cost = Object.create(globalObject.gui);
-	cost.build('span', {});
-	cost.gtext = 100;
-	cost.updateText();
-	btn.addComp(cost);
-	*/
 	
 	var game = {
 		drawingSurface: canvas.component.getContext('2d'),
@@ -159,45 +417,29 @@ local.game.list.shootMissile = function() {
 		},
 		build: function() {
 			var background = Object.create(globalObject.sprite);
-			background.x = 0;
-			background.y = 0;
-			background.sourceY = 32;
-			background.sourceWidth = 480;
-			background.sourceHeight = 320;
-			background.width = 480;
-			background.height = 320;
+			background.build({sourceY:32, sourceWidth:480, sourceHeight:320, width:480, height:320});
 			game.sprites.push(background);
 			
 			var alien = Object.create(globalObject.sprite);
-			alien.sourceX = 32;
-			alien.y = 32;
-			// alien.x = Math.floor(Math.random() * 15) * alien.width;
-			alien.x = canvas.gwidth / 2 - alien.width / 2;
+			alien.build({sourceX:32, y:32});
+			alien.x = canvas.gwidth / 2 - alien.halfWidth();
 			alien.health = 5;
-			alien.currentHealth = 5;
+			alien.currentHealth = 5; 
 			game.sprites.push(alien);
 			game.alien = alien;
 			
-			//Create the cannon and center it
 			var cannon = Object.create(globalObject.sprite);
-			cannon.x = canvas.gwidth / 2 - cannon.width / 2;
-			cannon.y = 280;
+			cannon.build({y:280});
+			cannon.x = canvas.gwidth / 2 - cannon.halfWidth();
 			game.sprites.push(cannon);
 			game.cannon = cannon;
 			
 			var missile = Object.create(globalObject.sprite);
-			missile.sourceX = 96;
-			missile.sourceWidth = 16;
-			missile.sourceHeight = 16;
-			missile.width = 16;
-			missile.height = 16;
-			// missile.visible = false;
-			// missile.ready = true;
+			missile.build({sourceX:96, sourceWidth:16, sourceHeight:16, width:16, height:16, vy:-110});
 			missile.x = cannon.centerX() - missile.halfWidth();
-			missile.y = cannon.y - missile.height;
-			missile.vy = -110;
+			missile.y = cannon.y - missile.height; 
 			missile.damage = 1;
-			
+
 			missile.interval = Object.create(globalObject.timer);
 			missile.interval.name= 'interval';
 			missile.interval.duration = 3000;
@@ -212,22 +454,12 @@ local.game.list.shootMissile = function() {
 			game.missile = missile;
 			
 			var hmBorder = Object.create(globalObject.sprite);
-			hmBorder.sourceWidth = 128;
-			hmBorder.sourceHeight = 14;
-			hmBorder.width = 128;
-			hmBorder.height = 14;
-			hmBorder.x = canvas.gwidth / 2 - hmBorder.width /2;
-			hmBorder.y = 10;
+			hmBorder.build({sourceWidth:128, sourceHeight:14, width:128, height:14, y:10});
+			 hmBorder.x = canvas.gwidth / 2 - hmBorder.halfWidth();
 			game.spritesHm.push(hmBorder);
 			
-			var hmMeter = Object.create(globalObject.sprite);
+			var hmMeter = Object.create(hmBorder);
 			hmMeter.sourceY = 14;
-			hmMeter.sourceWidth = 128;
-			hmMeter.sourceHeight = 14;
-			hmMeter.width = 128;
-			hmMeter.height = 14;
-			hmMeter.x = canvas.gwidth / 2 - hmMeter.width /2;
-			hmMeter.y = 10;
 			game.spritesHm.push(hmMeter);
 			game.hmMeter = hmMeter;
 			
@@ -273,9 +505,7 @@ local.game.list.shootMissile = function() {
 					game.hmMeter.sourceWidth = game.alien.currentHealth/game.alien.health * 128;
 					
 					game.missile.interval.start();
-				
 				}
-				
 			}
 
 			// shoot missile
@@ -296,7 +526,6 @@ local.game.list.shootMissile = function() {
 				game.hmMeter.sourceWidth = game.alien.currentHealth/game.alien.health * 128;
 					
 				game.missile.interval.start();
-				
 			}
 			
 			// move missile
@@ -402,8 +631,7 @@ local.game.list.framesPerSecond = function () {
 
 	var h3 = Object.create(globalObject.gui);
 	h3.build('h3', local.goe.h3);
-	h3.gtext = 0;
-	h3.updateText();
+	h3.updateText(0);
 
 	cardBase.contentHolder.addComp(h3);
 	local.row.addComp(cardBase.col);
@@ -412,8 +640,7 @@ local.game.list.framesPerSecond = function () {
 
 	local.loop.callBacks.push(function(time) {
 												counter.update(time);
-												h3.gtext = counter.fps;
-												h3.updateText();
+												h3.updateText(counter.fps);
 											});
 };
 
@@ -637,7 +864,7 @@ local.game.list.clickAddRect = function() {
 	cardBase.contentHolder.addComp(canvas);
 	local.row.addComp(cardBase.col);
 	
-	var ctx = canvas.component.getContext("2d");
+	var ctx = canvas.component.getContext('2d');
 
 	var boxClick = function(e) { 
 
@@ -666,8 +893,7 @@ local.game.list.clickCount = function() {
 	
 	var h3 = Object.create(globalObject.gui);
 	h3.build('h3', local.goe.h3);
-	h3.gtext = 0;
-	h3.updateText();
+	h3.updateText(0);
 	
 	cardBase.contentHolder.addComp(h3);
 	local.row.addComp(cardBase.col);
@@ -675,8 +901,7 @@ local.game.list.clickCount = function() {
 	var count = 0;
 	var boxClick = function(e) {
 		e.preventDefault();
-		h3.gtext = ++count;
-		h3.updateText();
+		h3.updateText(++count);
 	};
 	cardBase.card.component.addEventListener('click', boxClick, false);
 };
@@ -848,8 +1073,7 @@ local.game.list.changeFont = function() {
 	
 	var h3 = Object.create(globalObject.gui);
 	h3.build('h3', local.goe.h3);
-	h3.gtext = 'Change Font';
-	h3.updateText();
+	h3.updateText('Change Font');
 	
 	cardBase.contentHolder.addComp(navHolder);
 	cardBase.contentHolder.addComp(h3);
