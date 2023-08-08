@@ -678,7 +678,7 @@ local.game.list.buttons = {
 				incomePerSecs.build(game.income, game.interval);
 				upgradeBtn.build(game.investment, game.callBack);
 				
-				/*
+				
 				var timer = Object.create(globalObject.timer);
 				timer.duration = game.interval;
 				timer.start();
@@ -705,7 +705,7 @@ local.game.list.buttons = {
 						upgradeBtn.holder.bgGrey();
 					}
 				});
-				*/
+				
 						
 			},
 			play: function() {
