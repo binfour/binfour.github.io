@@ -324,10 +324,11 @@ var globalObject = (function () {
 			gui.component.src = src;
 		},
 		create: function(data) {	
+			// var gui = Object.create(this);
 			var gui = Object.create(this);
 			gui.build(data.elem, data.style);
 			if(data.txt) gui.updateText(data.txt);
-			data.parentHolder.component.appendChild(gui.component);
+			if(data.parentHolder) data.parentHolder.component.appendChild(gui.component);
 			return gui;
 		},
 		connect: function(data) {	
@@ -369,7 +370,112 @@ var globalObject = (function () {
 			this.col.addComp(this.card);
 			this.card.addComp(this.contentHolder);
 		}
-	}
+	},
 	
+	obj.burst = {
+		burst: false,
+		last: null,
+		duration: 3000, //default
+		amount: 0, //integer
+		lStamp: null,
+		income: 0,
+		point: 0,
+		callBack: null,
+		update: function(time) {
+			
+			if (!this.last) { this.last = time.stamp; }
+			
+			var delta = time.stamp-this.last;
+			
+			if (!this.lStamp) { this.lStamp = delta/this.duration; }
+			
+			if(delta <= this.duration) {
+				this.amount+=this.income*(delta/this.duration-this.lStamp);
+				if(Math.trunc(this.amount) > this.point) {
+					this.callBack(Math.trunc(this.amount)-this.point);
+					this.point = Math.trunc(this.amount);
+				}
+				this.lStamp=delta/this.duration;
+			} else {
+				this.callBack(this.income-this.point); 
+				this.burst = false;
+			}
+		},
+		clear: function() {		
+			this.last = null;
+			this.amount = 0;
+			this.point = 0;
+			this.lStamp = null;
+		}
+	},
+		
+	obj.coin = {
+		total: 0,
+		active: false,
+		gui: null,
+		delay: Object.create(obj.timer),
+		controller: Object.create(obj.burst),
+		set: function(income) {
+			this.controller.clear();
+			this.controller.burst = true;
+			
+			// ** FIX THIS
+			this.controller.income = income;
+		},
+		add: function(t) {
+			this.total+=t;
+		},
+		subtract: function(t) {
+			this.total-=t;
+		},
+		updateGui: function() {	
+			this.gui.updateText('$'+this.total);
+		},
+		
+		// main loop
+		update: function(time) {
+			
+			if(this.controller.burst && !this.active) {
+		
+				this.gui.removeStyle({rstyle: 'color: #212529;'});
+				this.gui.addStyle({gstyle: 'color: #4fc24f;'}); 
+				this.active = true;
+			} else if(!this.controller.burst && this.active){
+				this.delay.start();
+			}
+			
+			if(this.delay.complete) {
+				this.delay.end();
+				this.gui.removeStyle({rstyle: 'color: #4fc24f;'});
+				this.gui.addStyle({gstyle: 'color: #212529;'});
+				this.active = false;
+			}
+			
+			if(this.controller.burst) {
+				this.controller.update(time);
+			}
+		},
+		
+		// controller callback
+		callBack: function(increment) {
+			this.add(increment);
+			this.updateGui();
+		},
+		build: function(holder, localTimers, income) {
+			this.gui = Object.create(obj.gui);
+			this.gui.build('span', {gstyle: 'color: #212529'});
+			this.updateGui();
+			
+			// ** FIX THIS
+			holder.addComp(this.gui);
+			
+			this.controller.income = income
+			this.controller.callBack = this.callBack.bind(this);
+			
+			this.delay.duration = 1000;
+			localTimers.push(this.delay.update.bind(this.delay));
+		}
+	}
+
 	return obj;
 }());
