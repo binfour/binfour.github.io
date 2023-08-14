@@ -31,6 +31,9 @@ var globalObject = (function () {
 			var sprite = this, keys = Object.keys(data);
 			
 			keys.forEach(function(key) {
+		
+				sprite[key] = data[key];
+				/*
 				switch(key) {
 					case 'sourceX':
 						sprite.sourceX = data[key];
@@ -63,7 +66,14 @@ var globalObject = (function () {
 						sprite.vy = data[key];
 						break;
 				}
+				*/
 			});
+			
+		},
+		create: function(data) {
+			var obj = Object.create(this);
+			obj.build(data);
+			return obj;
 		}
 	};
 	

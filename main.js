@@ -33,7 +33,7 @@ var init = function () {
 };
 
 local.game.list.banner = {
-	on: true,
+	on: false,
 	play: function () {
 		var cardBase = Object.create(globalObject.cardBase);
 		cardBase.build(local.goe.cardBase);
@@ -48,8 +48,330 @@ local.game.list.banner = {
 	}
 };
 
-local.game.list.incomeExpense = {
+local.game.list.updgrade = {
 	on: true,
+	play: function () {
+		var cardBase = Object.create(globalObject.cardBase);
+		cardBase.build(local.goe.cardBase);
+		cardBase.contentHolder.removeStyle(local.goe.shootMissile.contentHolder);
+		// cardBase.card.addStyle(local.goe.shootAlien.card);
+		
+		local.row.addComp(cardBase.col);
+
+		var canvas = {
+			gui: globalObject.gui.create({elem: 'canvas', style: local.goe.canvasBase}),
+			drawingSurface: function() {
+				return this.gui.component.getContext('2d'); 
+			},
+			attach: function(cb) {
+				this.gui.component.addEventListener('click', cb, false);
+				cardBase.contentHolder.addComp(this.gui);
+			}
+		};
+		
+		var background = function() {
+			return globalObject.sprite.create({sourceY:32, sourceWidth:480, sourceHeight:320, width:480, height:320});
+		};
+		
+		var alien = function() {
+			return globalObject.sprite.create({sourceX:32, y:32, width:56, height:56, health:5, currentHealth:5});
+		};
+		
+		var cannon = function() {
+			return globalObject.sprite.create({y:280, width:24, height:24});
+		};
+		
+		var missile = function() {
+			var obj = globalObject.sprite.create({sourceX:96, sourceWidth:16, sourceHeight:16, width:10, height:10, vy:-110, damage:1});
+			
+			obj.interval = Object.create(globalObject.timer);
+			obj.interval.name= 'interval';
+			obj.interval.duration = 5000;
+			
+			obj.upgradeInterval = function() {
+				this.inverval.duration = 1000;
+			};
+			
+			return obj;
+		};
+		
+		var shootMissile = function(cannonCenterX, cannonY) {
+			var obj =  globalObject.sprite.create({sourceX:96, sourceWidth:16, sourceHeight:16, width:10, height:10, vy:-110, damage:1});
+			
+			obj.x = cannonCenterX - obj.halfWidth();
+			obj.y = cannonY - obj.height;
+			
+			return obj;
+		};
+		
+		var coin = {
+			holder: { 
+				gui: null,
+				build: function(holder) {
+					this.gui = globalObject.gui.create({elem: 'div', style: {gclass: 'rounded-1 p-2 mb-1', gstyle: 'background: #e6e6e6; font-size: 0.875rem;'}, parentHolder: holder});
+				}
+			},
+			income: {
+				value: 0,
+				gui: null,
+				build: function(holder, value) {
+					
+					// *** FIX THIS
+					// this.value=value
+					
+					var label = globalObject.gui.create({elem: 'div', style: {gstyle: 'color: #4fc24f;'}, parentHolder: holder});
+					globalObject.gui.connect({elem: 'span', txt: '$', style: {gclass: ''}, parentHolder: label});
+					this.gui = globalObject.gui.create({elem: 'span', txt: this.value.toString(), style: {}, parentHolder: label});
+				},
+				update: function() {
+					this.gui.updateText(this.value);
+				},
+				add: function(value) {
+					this.value+=value;
+					this.update();
+				},
+				subtract: function(value) {
+					this.value-=value;
+					this.update();
+				}
+			},
+			build: function() {
+				this.holder.build(cardBase.contentHolder);
+				this.income.build(this.holder.gui);
+			}
+		};
+		
+		var upgradeData = [
+			{type: 'Speed',},
+			{type: 'Power',}
+		];
+		
+		var btnContainer = function(holder) {
+			return globalObject.gui.create({elem: 'div', style: {gclass: 'mt-1'}, parentHolder: holder});
+		};
+		
+		var btnHolder = function(holder) {
+			return globalObject.gui.create({elem: 'div', style: {gclass: 'mb-1 p-2 rounded-1', gstyle: 'background: #e6e6e6; font-size: 0.875rem;'}, parentHolder: holder});
+		};
+		
+		var btnTitle = function(holder, value) {
+			var label = globalObject.gui.create({elem: 'div', style: {gstyle: 'text-align: center;'}, parentHolder: holder});
+			return globalObject.gui.create({elem: 'div', txt: value, style: {}, parentHolder: label});
+		};
+		
+		var upgrades = function() {
+			var obj = {};
+			var upData = null;
+			var list = [];
+			
+			obj.init = function(data) {
+				upData = JSON.parse(JSON.stringify(data));
+			};
+			
+			obj.build = function(pHolder) {
+
+				upData.forEach(function(upg, index) {
+					
+					var bHolder = btnHolder(pHolder);
+					
+					var upgradeObj = {ID:index}; 
+					
+					var keys = Object.keys(upg);
+					keys.forEach(function(key) {
+						
+						upgradeObj.title = {
+							value: upg[key],
+							gui: btnTitle(bHolder, upg[key])
+						};
+						// console.log(key);
+						
+					});
+				});
+			};
+			
+			return Object.create(obj);
+		};
+		
+		var game = {
+			// drawingSurface: canvas.component.getContext('2d'),
+			drawingSurface: null,
+			cannon: null,
+			alien: null,
+			missile: null,
+			hmMeter: null,
+			state: 'loading',
+			imgs: [],
+			sprites: [],
+			// spritesHm: [],
+			shootMissileList: [],
+			coin: null,
+			upgrades: null,
+			canvasClick: function() {
+	
+				game.shootMissileList.push(shootMissile(game.cannon.centerX(), game.cannon.y));
+				// console.log(game.shootMissileList);
+			},
+			
+			init: function() {
+				var imgs = ['alien', 'meter'];
+				imgs.forEach(function(img) {
+					var obj = Object.create(globalObject.gui);
+					obj.buildImg('img', {}, local.goe.imgSrc.getFile(img));
+					game.imgs.push(obj);
+				});
+				game.coin = Object.create(coin);
+				
+				game.alien = alien();
+				game.cannon = cannon();
+				game.missile = missile();
+				
+				game.upgrades = upgrades();
+				game.upgrades.init(upgradeData);
+				
+				local.loop.callBacks.push(game.update);
+
+			},
+			load: function() {
+				
+				// *** Fix this -setting state=build before load complete
+				game.state = 'build';
+				game.imgs.forEach(function(gui) { 
+					if (!gui.gloaded) { game.state = 'loading'; }
+				});
+			},
+			build: function() {
+				game.coin.build();
+				
+				canvas.attach(game.canvasClick);
+				game.drawingSurface = canvas.drawingSurface();
+				
+				game.sprites.push(background());
+				
+				game.alien.x = canvas.gui.gwidth / 2 - game.alien.halfWidth();
+				game.sprites.push(game.alien);
+				
+				game.cannon.x = canvas.gui.gwidth / 2 - game.cannon.halfWidth();
+				game.sprites.push(game.cannon);
+				
+				game.missile.x = game.cannon.centerX() - game.missile.halfWidth();
+				game.missile.y = game.cannon.y - game.missile.height; 
+				local.loop.timers.push(game.missile.interval.update.bind(game.missile.interval));
+				game.sprites.push(game.missile);
+				
+				game.upgrades.build(btnContainer(cardBase.contentHolder));
+				
+				game.state = 'play';
+			},
+			render: function() {
+				game.drawingSurface.clearRect(0, 0, canvas.gwidth, canvas.gheight);
+				
+				// draw background, ship, alien
+				globalObject.draw(game.drawingSurface, canvas.component, game.sprites, game.imgs[0].component);
+				
+				// missiles
+				globalObject.draw(game.drawingSurface, canvas.component, game.shootMissileList, game.imgs[0].component);
+				
+			},
+			play: function(time) {
+				
+				if(globalObject.hitTestRectangle(game.missile, game.alien)) { 
+					
+					game.coin.income.add(1);
+			
+					game.alien.currentHealth-=game.missile.damage;
+					if(game.alien.currentHealth == 0) {
+						
+						//game.alien.sourceX = 64;
+					
+						game.missile.vy = 0;
+						game.missile.x = game.cannon.centerX() - game.missile.halfWidth();
+						game.missile.y = game.cannon.y - game.missile.height;
+						game.missile.visible = false;
+						/*
+						game.hmMeter.width = game.alien.currentHealth/game.alien.health * 128;
+						game.hmMeter.sourceWidth = game.alien.currentHealth/game.alien.health * 128;
+						*/
+						// respawn
+						//game.missile.respawn.start();
+						
+						game.missile.interval.start();
+						
+					} else {
+						
+						game.missile.vy = 0;
+						game.missile.x = game.cannon.centerX() - game.missile.halfWidth();
+						game.missile.y = game.cannon.y - game.missile.height;
+						game.missile.visible = false;
+						/*
+						game.hmMeter.width = game.alien.currentHealth/game.alien.health * 128;
+						game.hmMeter.sourceWidth = game.alien.currentHealth/game.alien.health * 128;
+						*/
+						game.missile.interval.start();
+					}
+				}
+
+				// move missile -on interval
+				if(game.missile.interval.complete) {
+					game.missile.interval.end();
+					game.missile.visible = true;
+					game.missile.vy = -110;
+				}
+				
+				/*
+				// respawn
+				if(game.missile.respawn.complete) {
+					game.missile.respawn.end();
+					
+					game.alien.currentHealth = 5;
+					game.alien.sourceX = 32;
+					
+					game.hmMeter.width = game.alien.currentHealth/game.alien.health * 128;
+					game.hmMeter.sourceWidth = game.alien.currentHealth/game.alien.health * 128;
+					
+					game.missile.interval.start();
+				}
+				*/
+				
+				// move missile
+				if(game.missile.vy < 0) {
+					game.missile.y+=game.missile.vy*time.delta;
+				}
+				
+				if(game.shootMissileList.length > 0) {
+					game.shootMissileList.forEach(function(missile, index, array){
+						if(globalObject.hitTestRectangle(missile, game.alien)) {
+							
+							/*
+							check collision 
+							-increment coin
+							-remove object from array
+							*/
+							game.coin.income.add(1);
+							array.splice(index,1);
+						}
+						
+						// move shoot missile
+						missile.y+=missile.vy*time.delta;
+					});
+				}
+
+				game.render();
+
+			},
+			update: function(time) {
+				switch(game.state) {
+					case 'loading': game.load(); break;
+					case 'build': game.build(); break;
+					case 'play': game.play(time); break;
+				}
+			}
+		};
+		game.init();	
+	}
+};
+
+local.game.list.incomeExpense = {
+	on: false,
 	play: function () {
 		var cardBase = Object.create(globalObject.cardBase);
 		cardBase.build(local.goe.cardBase);
@@ -189,7 +511,7 @@ local.game.list.incomeExpense = {
 					}
 				});
 				
-				var btn = globalObject.gui.create({elem: 'div', style: {gstyle: 'cursor: pointer; text-align: center; background: #abceee;'}, parentHolder: h});
+				var btn = globalObject.gui.create({elem: 'div', style: {gstyle: 'cursor: pointer; text-align: center; background: #abceee;' }, parentHolder: h});
 				globalObject.gui.connect({elem: 'span', txt: 'Buy', style: {gclass: ''}, parentHolder: btn});
 				
 				dataObj.btn = {
@@ -748,7 +1070,7 @@ local.game.list.increment = {
 };
 
 local.game.list.shootMissile = {
-	on: true,
+	on: false,
 	play: function() {
 		var cardBase = Object.create(globalObject.cardBase);
 		cardBase.build(local.goe.cardBase);
@@ -921,7 +1243,7 @@ local.game.list.shootMissile = {
 };
 
 local.game.list.walkAnim = {
-	on: true,
+	on: false,
 	play: function () {
 		var cardBase = Object.create(globalObject.cardBase);
 		cardBase.build(local.goe.cardBase);
@@ -1001,7 +1323,7 @@ local.game.list.walkAnim = {
 };
 
 local.game.list.framesPerSecond = {
-	on: true,
+	on: false,
 	play: function () {
 		var cardBase = Object.create(globalObject.cardBase);
 		cardBase.build(local.goe.cardBase);
@@ -1024,7 +1346,7 @@ local.game.list.framesPerSecond = {
 };
 
 local.game.list.moveHorizontal = {
-	on: true,
+	on: false,
 	play: function () {
 		var cardBase = Object.create(globalObject.cardBase);
 		cardBase.build(local.goe.cardBase);
@@ -1088,7 +1410,7 @@ local.game.list.moveHorizontal = {
 };
 
 local.game.list.match = {
-	on: true,
+	on: false,
 	play: function() {
 		var cardBase = Object.create(globalObject.cardBase);
 		cardBase.build(local.goe.cardBase);
@@ -1238,7 +1560,7 @@ local.game.list.match = {
 };
 
 local.game.list.clickAddRect = {
-	on: true,
+	on: false,
 	play: function() {
 		var cardBase = Object.create(globalObject.cardBase);
 		cardBase.build(local.goe.cardBase);
@@ -1275,7 +1597,7 @@ local.game.list.clickAddRect = {
 };
 
 local.game.list.clickCount = {
-	on: true,
+	on: false,
 	play: function() {
 		var cardBase = Object.create(globalObject.cardBase);
 		cardBase.build(local.goe.cardBase);
@@ -1298,7 +1620,7 @@ local.game.list.clickCount = {
 };
 
 local.game.list.moveShip = {
-	on: true,
+	on: false,
 	play: function() {
 		var cardBase = Object.create(globalObject.cardBase);
 		cardBase.build(local.goe.cardBase);
@@ -1453,7 +1775,7 @@ local.game.list.moveShip = {
 };
 
 local.game.list.changeFont = {
-	on: true,
+	on: false,
 	play: function() {
 		var cardBase = Object.create(globalObject.cardBase);
 		cardBase.build(local.goe.cardBase);
@@ -1498,7 +1820,7 @@ local.game.list.changeFont = {
 };
 
 local.game.list.shootAlien = {
-	on: true,
+	on: false,
 	play: function() {
 		var cardBase = Object.create(globalObject.cardBase);
 		cardBase.build(local.goe.cardBase);
@@ -1618,7 +1940,7 @@ local.game.list.shootAlien = {
 };
 
 local.game.list.changeImg = {
-	on: true,
+	on: false,
 	play: function() {
 		var cardBase = Object.create(globalObject.cardBase);
 		cardBase.build(local.goe.cardBase);
@@ -1694,7 +2016,7 @@ local.game.list.changeImg = {
 };
 
 local.game.list.buildMap = {
-	on: true,
+	on: false,
 	play: function() {
 		var cardBase = Object.create(globalObject.cardBase);
 		cardBase.build(local.goe.cardBase);
